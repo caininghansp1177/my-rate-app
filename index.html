@@ -8,6 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="极简汇率">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluent/512/currency-exchange.png">
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
@@ -50,42 +51,24 @@
         
         .update-time { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
-        /* 添加币种按钮 - iOS 磨砂玻璃风格 */
         .add-btn {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #ffffff;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 4px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15); color: #ffffff;
+            padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; margin-top: 4px;
         }
         .add-btn:active { transform: scale(0.95); background: rgba(255, 255, 255, 0.2); }
 
         .currency-container { display: flex; flex-direction: column; gap: 14px; }
 
-        /* 核心卡片修改：变为可点击区域，扩大触摸面积 */
         .currency-card {
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 18px;
-            padding: 18px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            position: relative;
-            cursor: pointer; /* 鼠标或手指放上去有点击提示 */
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 18px;
+            padding: 18px 20px; display: flex; align-items: center; justify-content: space-between;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .currency-card::before {
@@ -99,13 +82,13 @@
             box-shadow: 0 0 15px rgba(10, 132, 255, 0.2);
         }
 
-        .left-info { display: flex; align-items: center; gap: 14px; pointer-events: none; }
+        .left-info { display: flex; align-items: center; gap: 14px; }
         .flag { font-size: 30px; line-height: 1; }
         .currency-info { display: flex; flex-direction: column; }
         .currency-code { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
         .currency-name { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
 
-        .input-section { text-align: right; flex-grow: 1; padding-left: 20px; }
+        .input-section { text-align: right; flex-grow: 1; padding-left: 20px; position: relative; }
         .input-wrapper { position: relative; width: 100%; }
         
         input {
@@ -113,10 +96,21 @@
             font-size: 26px; font-weight: 600; text-align: right; padding: 0; outline: none;
             font-family: "SF Pro Display", -apple-system, sans-serif;
         }
-        .currency-card:not(.active) input { color: rgba(255, 255, 255, 0.95); }
-        .rate-memo { font-size: 11px; color: var(--text-muted); margin-top: 5px; font-weight: 400; pointer-events: none; }
+        
+        /* 核心修复：非激活卡片数字颜色稍微柔和 */
+        .currency-card:not(.active) input { color: rgba(255, 255, 255, 0.8); }
+        .rate-memo { font-size: 11px; color: var(--text-muted); margin-top: 5px; font-weight: 400; }
 
-        /* 全币种动态选择弹窗 */
+        /* 核心修复：覆盖在输入框上方的全透明热区层，专门用来捕捉 iOS 第一次点击 */
+        .click-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 10; cursor: pointer;
+        }
+        .currency-card.active .click-overlay {
+            display: none; /* 卡片激活后，隐藏遮罩，让用户可以直接控制光标和输入 */
+        }
+
+        /* 弹窗样式不变 */
         .modal {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -133,13 +127,9 @@
             transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         .modal.show .modal-content { transform: translateY(0); }
-
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-title { font-size: 18px; font-weight: 700; }
         .close-btn { color: var(--ios-blue); font-weight: 600; cursor: pointer; font-size: 16px; }
-
         .opt-grid { display: flex; flex-direction: column; gap: 10px; }
         .opt-item {
             background: rgba(255,255,255,0.05); padding: 14px 16px; border-radius: 12px;
@@ -173,8 +163,7 @@
     </div>
 
     <script>
-        // 全球主流核心货币大字库（包含国旗图标、代码、名称、符号）
-        const allCurrencies = {
+        const configCurrencies = {
             'CNY': { flag: '🇨🇳', name: '人民币', symbol: '¥' },
             'USD': { flag: '🇺🇸', name: '美元', symbol: '$' },
             'CAD': { flag: '🇨🇦', name: '加元', symbol: 'C$' },
@@ -196,10 +185,8 @@
             'AED': { flag: '🇦🇪', name: '阿联酋迪拉姆', symbol: 'AED' }
         };
 
-        // 用户当前留在主界面的币种（初始为你指定的9种核心货币）
         let activeList = ['CNY', 'USD', 'CAD', 'JPY', 'EUR', 'GBP', 'SGD', 'AUD', 'HKD'];
-
-        let exchangeRates = { "CNY": 7.25, "USD": 1.0, "CAD": 1.37, "JPY": 158.5, "EUR": 0.93, "GBP": 0.79, "SGD": 1.35, "AUD": 1.51, "HKD": 7.81, "CHF": 0.90 };
+        let exchangeRates = { "CNY": 7.25, "USD": 1.0, "CAD": 1.37, "JPY": 158.5, "EUR": 0.93, "GBP": 0.79, "SGD": 1.35, "AUD": 1.51, "HKD": 7.81 };
         let currentActiveCode = 'CNY';
         let currentInputValue = 100;
 
@@ -208,13 +195,14 @@
             container.innerHTML = '';
 
             activeList.forEach(code => {
-                const item = allCurrencies[code];
+                const item = configCurrencies[code];
                 if(!item) return;
                 const isCardActive = code === currentActiveCode;
                 
-                // 给整个卡片增加onclick，点击卡片任意区域自动聚焦输入框！
+                // 重点改进：添加了单独的 .click-overlay 层，且去掉任何只读(readonly)属性限制
                 const cardHtml = `
-                    <div class="currency-card ${isCardActive ? 'active' : ''}" id="card-${code}" onclick="handleCardClick(event, '${code}')">
+                    <div class="currency-card ${isCardActive ? 'active' : ''}" id="card-${code}">
+                        <div class="click-overlay" onclick="activateCard('${code}')"></div>
                         <div class="left-info">
                             <span class="flag">${item.flag}</span>
                             <div class="currency-info">
@@ -229,8 +217,7 @@
                                        inputmode="decimal" 
                                        placeholder="0"
                                        value=""
-                                       oninput="handleInput(this, '${code}')"
-                                       ${isCardActive ? '' : 'readonly'}>
+                                       oninput="handleInput(this, '${code}')">
                             </div>
                             <div class="rate-memo" id="memo-${code}">---</div>
                         </div>
@@ -241,29 +228,32 @@
             updateAllValues();
         }
 
-        // 核心用户点击优化：点击卡片任意地方，立刻触发输入法界面
-        function handleCardClick(event, code) {
-            const inputField = document.getElementById(`input-${code}`);
-            
+        // 重点改进：点击事件响应逻辑
+        function activateCard(code) {
+            // 1. 切换当前的激活态高亮类名
             if (currentActiveCode !== code) {
-                // 更换高亮蓝框卡片
                 const oldCard = document.getElementById(`card-${currentActiveCode}`);
-                const oldInput = document.getElementById(`input-${currentActiveCode}`);
                 if (oldCard) oldCard.classList.remove('active');
-                if (oldInput) oldInput.setAttribute('readonly', true);
-
+                
                 currentActiveCode = code;
                 const newCard = document.getElementById(`card-${code}`);
-                newCard.classList.add('active');
-                inputField.removeAttribute('readonly');
-                
+                if (newCard) newCard.classList.add('active');
+            }
+
+            // 2. 核心：顺应 iOS 的原生聚焦，直接对准真正的输入框
+            const inputField = document.getElementById(`input-${code}`);
+            if (inputField) {
                 currentInputValue = parseFloat(inputField.value) || 0;
                 updateAllValues();
+                
+                // 强制、立刻弹出键盘
+                inputField.focus();
+                
+                // 选中文本方便一键修改
+                setTimeout(() => {
+                    inputField.setSelectionRange(0, inputField.value.length);
+                }, 30);
             }
-            
-            // 强制聚焦，瞬间弹起输入法
-            inputField.focus();
-            setTimeout(() => inputField.setSelectionRange(0, inputField.value.length), 50);
         }
 
         function updateAllValues() {
@@ -293,11 +283,13 @@
         }
 
         function handleInput(element, code) {
-            currentInputValue = parseFloat(element.value) || 0;
-            updateAllValues();
+            // 当处于激活态并且正在打字时，实时同步其他卡片
+            if (code === currentActiveCode) {
+                currentInputValue = parseFloat(element.value) || 0;
+                updateAllValues();
+            }
         }
 
-        // 弹窗管理：显示/隐藏可选币种列表
         function toggleModal(show) {
             const modal = document.getElementById('currencyModal');
             if (show) {
@@ -305,17 +297,16 @@
                 modal.classList.add('show');
             } else {
                 modal.classList.remove('show');
-                renderMainList(); // 关闭弹窗时刷新主界面
+                renderMainList();
             }
         }
 
-        // 渲染可选菜单
         function renderModalOptions() {
             const grid = document.getElementById('modalOptions');
             grid.innerHTML = '';
 
-            Object.keys(allCurrencies).forEach(code => {
-                const item = allCurrencies[code];
+            Object.keys(configCurrencies).forEach(code => {
+                const item = configCurrencies[code];
                 const isAdded = activeList.includes(code);
                 
                 const optHtml = `
@@ -331,15 +322,10 @@
             });
         }
 
-        // 点击勾选或取消某个币种
         function toggleCurrencySelection(code) {
             const index = activeList.indexOf(code);
             if (index > -1) {
-                if (activeList.length <= 1) {
-                    alert("请至少保留一种展示货币");
-                    return;
-                }
-                // 如果删除了当前正在输入的币种，重置到第一个
+                if (activeList.length <= 1) return;
                 if(currentActiveCode === code) {
                     activeList.splice(index, 1);
                     currentActiveCode = activeList[0];
@@ -347,9 +333,9 @@
                     activeList.splice(index, 1);
                 }
             } else {
-                activeList.push(code); // 添加到列表末尾
+                activeList.push(code);
             }
-            renderModalOptions(); // 实时刷新打勾状态
+            renderModalOptions();
         }
 
         async function fetchLatestRates() {
